@@ -9,6 +9,7 @@ from django.template.loader import render_to_string
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.views import View
+import pprint
 
 
 # Signup view
@@ -20,18 +21,18 @@ def signup(request):
 
         if password != confirm_password:
             messages.warning(request, "Passwords do not match")
-            return render(request, 'authentication/signup.html')
+            return render(request, 'signup.html')
 
         if User.objects.filter(username=email).exists():
             messages.info(request, "Email already exists")
-            return render(request, 'authentication/signup.html')
+            return render(request, 'signup.html')
 
         user = User.objects.create_user(username=email, email=email, password=password)
         user.is_active = False
         user.save()
 
         email_subject = "Activate your account"
-        message = render_to_string('authentication/activate.html', {
+        message = render_to_string('activate.html', {
             'user': user,
             'domain': '127.0.0.1:8000',
             'uid': urlsafe_base64_encode(force_bytes(user.pk)),
@@ -51,7 +52,7 @@ def signup(request):
         messages.success(request, "Account created successfully. Check your email for activation link.")
         return redirect('/auth/login')
 
-    return render(request, 'authentication/signup.html')
+    return render(request, 'signup.html')
 
 
 # Activation view
@@ -69,12 +70,13 @@ class ActivateAccountView(View):
             messages.success(request, "Account activated successfully")
             return redirect('/auth/login')
 
-        return render(request, 'authentication/activatefail.html')
+        return render(request, 'activatefail.html')
 
 
 # Login view
 def handlelogin(request):
     if request.method == "POST":
+        pprint.pprint(vars(request))
         username = request.POST['email']
         userpassword = request.POST['pass1']
         myuser = authenticate(username=username, password=userpassword)
@@ -82,15 +84,17 @@ def handlelogin(request):
         if myuser is not None:
             login(request, myuser)
             messages.success(request, "Login Success")
+            print(request)
             return redirect('/')
         else:
             messages.error(request, "Invalid Credentials")
             return redirect('/auth/login')
 
-    return render(request, 'authentication/login.html')
+    return render(request, 'login.html')
 
 
 # Logout view
 def handlelogout(request):
     logout(request)
+    messages.success(request, "Logout Success")
     return redirect('/auth/login')
